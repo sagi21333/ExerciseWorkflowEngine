@@ -13,9 +13,9 @@ export class WorkflowController {
     return { message: 'Workflow created successfully',  newWorkflow};
   }
 
-  @Put(':id/step')
-  addStepToWorkflow(@Param('id') id: string, @Body() step: Step) {
-    return this.workflowService.addStepToWorkflow(id, step);
+  @Put(':id/stepName')
+  addStepToWorkflow(@Param('id') id: string, @Body() stepName: string) {
+    return this.workflowService.addStepToWorkflow(id, stepName);
   }
 
   @Put(':id/dependency')

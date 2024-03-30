@@ -2,7 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { Workflow, WorkflowParams } from './workflow.types';
 import { Engine } from './workflow.engine';
-import { Step } from '../step/step';
+import { Step } from '../step/step'; // Import necessary step classes
+import { OptionGrantStep } from 'src/step/option-grant-step';
+import { SendEmailStep } from 'src/step/send-email-step';
 
 @Injectable()
 export class WorkflowService {
@@ -28,42 +30,43 @@ export class WorkflowService {
 
   addWorkflow(workflow: Workflow) {
     workflow.steps.forEach(step => {
-      step.id = uuidv4(); // Generate unique ID for each step
+      step.id = uuidv4(); 
     });
-    workflow.dependencies = new Map<Step, Step[]>(); // Initialize dependencies as a Map
+    workflow.dependencies = new Map<Step, Step[]>(); 
     this.workflows.set(workflow.id, workflow);
   }
 
-  addStepToWorkflow(workflowId: string, step: Step) {
+  addStepToWorkflow(workflowId: string, stepName: string) {
     const workflow = this.workflows.get(workflowId);
     if (!workflow) {
       throw new Error(`Workflow with id ${workflowId} not found`);
     }
-    workflow.steps.push(step);
+
+    const newStep = this.createStep(stepName); 
+    workflow.steps.push(newStep);
   }
 
   addDependencyToStep(workflowId: string, stepId: string, dependentStepId: string) {
     const workflow = this.workflows.get(workflowId);
     if (!workflow) {
-        throw new Error(`Workflow with id ${workflowId} not found`);
+      throw new Error(`Workflow with id ${workflowId} not found`);
     }
     
     const step = workflow.steps.find(s => s.id === stepId);
     const dependentStep = workflow.steps.find(s => s.id === dependentStepId);
     if (!step || !dependentStep) {
-        throw new Error(`Step not found in workflow`);
+      throw new Error(`Step not found in workflow`);
     }
 
     if (!workflow.dependencies.has(step)) {
-        workflow.dependencies.set(step, []);
+      workflow.dependencies.set(step, []);
     }
 
     const dependencies = workflow.dependencies.get(step);
     dependencies.push(dependentStep);
     
     return workflow;
-}
-
+  }
 
   getWorkflowById(workflowId: string) {
     const workflow = this.workflows.get(workflowId);
@@ -73,14 +76,38 @@ export class WorkflowService {
     return workflow;
   }
 
-  createWorkflow(id: string, steps: Step[]) {
+  createWorkflow(id: string, steps: (Step | string)[]) {
+    const newSteps: Step[] = steps.map(step => {
+      if (typeof step === 'string') {
+          return this.createStep(step); // Create a step if it's a string
+      } else if ('name' in step && 'execute' in step && typeof step.execute === 'function') {
+          // Check if the object conforms to the structure of the Step class
+          return step as Step;
+      } else {
+          throw new Error('Invalid step');
+      }
+  });
+    
     const workflow: Workflow = {
       id,
-      steps,
+      steps: newSteps,
       dependencies: new Map<Step, Step[]>(),
     };
     this.addWorkflow(workflow);
 
     return workflow;
+  }
+
+  private createStep(stepName: string): Step {
+    let newStep: Step;
+    if (stepName === 'Send Email') {
+      newStep = new SendEmailStep(stepName); 
+    } else if (stepName === 'Update Options Grant') {
+      newStep = new OptionGrantStep(stepName); 
+    } else {
+        throw new Error(`Step type '${stepName}' is not supported`);
+    }
+
+    return newStep;
   }
 }
