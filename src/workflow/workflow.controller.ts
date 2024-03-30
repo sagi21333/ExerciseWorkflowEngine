@@ -9,8 +9,8 @@ export class WorkflowController {
 
   @Post()
   createWorkflow(@Body() workflow: Workflow) {
-    this.workflowService.createWorkflow(workflow);
-    return { message: 'Workflow created successfully' };
+    const newWorkflow = this.workflowService.createWorkflow(workflow.id, workflow.steps);
+    return { message: 'Workflow created successfully',  newWorkflow};
   }
 
   @Put(':id/step')
