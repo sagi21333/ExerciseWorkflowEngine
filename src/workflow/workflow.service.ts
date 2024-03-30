@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Workflow, WorkflowParams } from './workflow.types';
 import { Engine } from './workflow.engine';
 import { Step } from '../step/step';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class WorkflowService {
@@ -34,13 +35,19 @@ export class WorkflowService {
     if (!workflow) {
       throw new Error(`Workflow with id ${workflowId} not found`);
     }
+    step.id = uuidv4(); 
     workflow.steps.push(step);
   }
 
-  addDependencyToStep(workflowId: string, step: Step, dependentStep: Step) {
+  addDependencyToStep(workflowId: string, stepId: string, dependentStepId: string) {
     const workflow = this.workflows.get(workflowId);
     if (!workflow) {
       throw new Error(`Workflow with id ${workflowId} not found`);
+    }
+    const step = workflow.steps.find(step => step.id === stepId);
+    const dependentStep = workflow.steps.find(step => step.id === dependentStepId);
+    if (!step || !dependentStep) {
+      throw new Error(`Step not found in workflow`);
     }
     const dependencies = workflow.dependencies.get(step) || [];
     dependencies.push(dependentStep);
@@ -55,12 +62,10 @@ export class WorkflowService {
     return workflow;
   }
 
-  createWorkflow(id: string, steps: Step[], dependencies: Map<Step, Step[]>) {
-    const workflow: Workflow = {
-      id,
-      steps,
-      dependencies,
-    };
-    this.workflows.set(id, workflow);
+  createWorkflow(workflow: Workflow) {
+    workflow.steps.forEach(step => {
+      step.id = uuidv4(); // Generate unique ID for each step
+    });
+    this.workflows.set(workflow.id, workflow);
   }
 }

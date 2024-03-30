@@ -9,18 +9,28 @@ export class Engine {
     const pendingSteps = new Set(steps);
     const stepSuccess = new Map<Step, boolean>();
 
+    // Convert dependencies object to a Map
+    const dependenciesMap = new Map<Step, Step[]>();
+    for (const [dependentStepId, dependsOnSteps] of Object.entries(dependencies)) {
+      const dependentStep = steps.find(step => step.id === dependentStepId);
+      if (dependentStep) {
+        const dependsOnStepObjects = dependsOnSteps.map(depStepId => steps.find(step => step.id === depStepId));
+        dependenciesMap.set(dependentStep, dependsOnStepObjects.filter(step => step));
+      }
+    }
+
     // Execute steps with no dependencies
-    const stepsWithNoDependencies = steps.filter(step => !dependencies.has(step));
-    await Promise.all(stepsWithNoDependencies.map((step, index) => this.executeStep(step, params[index], dependencies, pendingSteps, stepSuccess)));
+    const stepsWithNoDependencies = steps.filter(step => !dependenciesMap.has(step));
+    await Promise.all(stepsWithNoDependencies.map(step => this.executeStep(step, params[step.id], dependenciesMap, pendingSteps, stepSuccess)));
 
     // Execute steps with dependencies
     while (pendingSteps.size > 0) {
       const readySteps = Array.from(pendingSteps).filter(step => {
-        const dependentSteps = dependencies.get(step) || [];
+        const dependentSteps = dependenciesMap.get(step) || [];
         return dependentSteps.every(depStep => stepSuccess.get(depStep));
       });
 
-      await Promise.all(readySteps.map((step, index) => this.executeStep(step, params[index], dependencies, pendingSteps, stepSuccess)));
+      await Promise.all(readySteps.map(step => this.executeStep(step, params[step.id], dependenciesMap, pendingSteps, stepSuccess)));
     }
   }
 

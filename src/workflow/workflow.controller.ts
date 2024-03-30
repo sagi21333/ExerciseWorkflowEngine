@@ -9,8 +9,7 @@ export class WorkflowController {
 
   @Post()
   createWorkflow(@Body() workflow: Workflow) {
-    const { id, steps, dependencies } = workflow;
-    this.workflowService.createWorkflow(id, steps, dependencies);
+    this.workflowService.createWorkflow(workflow);
     return { message: 'Workflow created successfully' };
   }
 
@@ -20,8 +19,8 @@ export class WorkflowController {
   }
 
   @Put(':id/dependency')
-  addDependencyToStep(@Param('id') id: string, @Body() dependency: { step: Step, dependentStep: Step }) {
-    return this.workflowService.addDependencyToStep(id, dependency.step, dependency.dependentStep);
+  addDependencyToStep(@Param('id') id: string, @Body() dependency: { stepId: string, dependentStepId: string }) {
+    return this.workflowService.addDependencyToStep(id, dependency.stepId, dependency.dependentStepId);
   }
 
   @Post(':id/execute')
