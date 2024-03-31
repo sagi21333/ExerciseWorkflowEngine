@@ -1,25 +1,21 @@
 import { Injectable } from '@nestjs/common';
-import { Workflow } from './workflow.types';
+import { Workflow, WorkflowParams, StepParams } from './workflow.types';
 import { Step } from '../step/step';
 
 @Injectable()
 export class Engine {
-  async run(workflow: Workflow, params: any) {
+  async run(workflow: Workflow, params: WorkflowParams) {
     const { steps, dependencies } = workflow;
     const pendingSteps = new Set(steps);
     const stepSuccess = new Map<Step, boolean>();
 
-    if (!(dependencies instanceof Map)) {
-      workflow.dependencies = this.convertDependenciesToObject(dependencies, steps);
-    }
-
-    await this.runWithoutDependencies(steps, params, workflow.dependencies, pendingSteps, stepSuccess);
-    await this.runWithDependencies(pendingSteps, params, workflow.dependencies, stepSuccess);
+    await this.runWithoutDependencies(steps, params, dependencies, pendingSteps, stepSuccess);
+    await this.runWithDependencies(pendingSteps, params, dependencies, stepSuccess);
   }
 
   private async runWithoutDependencies(
     steps: Step[],
-    params: any,
+    params: WorkflowParams,
     dependencies: Map<Step, Step[]>,
     pendingSteps: Set<Step>,
     stepSuccess: Map<Step, boolean>
@@ -30,7 +26,7 @@ export class Engine {
 
   private async runWithDependencies(
     pendingSteps: Set<Step>,
-    params: any,
+    params: WorkflowParams,
     dependencies: Map<Step, Step[]>,
     stepSuccess: Map<Step, boolean>
   ) {
@@ -46,7 +42,7 @@ export class Engine {
 
   private async executeStep(
     step: Step,
-    stepParams: any,
+    stepParams: StepParams,
     dependencies: Map<Step, Step[]>,
     pendingSteps: Set<Step>,
     stepSuccess: Map<Step, boolean>
@@ -70,19 +66,5 @@ export class Engine {
     } finally {
       pendingSteps.delete(step);
     }
-  }
-
-  private convertDependenciesToObject(dependencies: Record<string, string[]>, steps: Step[]): Map<Step, Step[]> {
-    const dependenciesMap = new Map<Step, Step[]>();
-
-    for (const [dependentStepId, dependsOnSteps] of Object.entries(dependencies)) {
-      const dependentStep = steps.find(step => step.id === dependentStepId);
-      if (dependentStep) {
-        const dependsOnStepObjects = dependsOnSteps.map(depStepId => steps.find(step => step.id === depStepId));
-        dependenciesMap.set(dependentStep, dependsOnStepObjects.filter(step => step));
-      }
-    }
-
-    return dependenciesMap;
   }
 }
