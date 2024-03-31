@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { Workflow, WorkflowParams } from './workflow.types';
 import { Engine } from './workflow.engine';
-import { Step } from '../step/step'; // Import necessary step classes
+import { Step } from '../step/step';
 import { OptionGrantStep } from 'src/step/option-grant-step';
 import { SendEmailStep } from 'src/step/send-email-step';
 
@@ -79,9 +79,8 @@ export class WorkflowService {
   createWorkflow(id: string, steps: (Step | string)[]) {
     const newSteps: Step[] = steps.map(step => {
       if (typeof step === 'string') {
-          return this.createStep(step); // Create a step if it's a string
+          return this.createStep(step);
       } else if ('name' in step && 'execute' in step && typeof step.execute === 'function') {
-          // Check if the object conforms to the structure of the Step class
           return step as Step;
       } else {
           throw new Error('Invalid step');

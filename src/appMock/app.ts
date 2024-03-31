@@ -10,7 +10,7 @@ export async function main() {
   const workflowService = new WorkflowService();
 
   const sendEmailStep1: Step = {
-    id: uuidv4(), // Generate a unique id for the step
+    id: uuidv4(),
     name: 'Send Email 1',
     execute: (params: any) => new SendEmailStep('Send Email 1').execute(params),
     successful: false,
@@ -50,7 +50,6 @@ export async function main() {
 
   workflowService.addWorkflow(workflow2);
 
-  // Define parameters for workflow 2 execution
   const workflow2Params: WorkflowParams = {
     [sendEmailStep1.id]: mockEmailParams, 
     [sendEmailStep2.id]: mockEmailParams, 
@@ -58,7 +57,6 @@ export async function main() {
     [optionGrantStep2.id]: mockOptionsTwo, 
   };
 
-  // Execute workflow 2
   await workflowService.executeWorkflowById('workflow2', workflow2Params);
 }
 
